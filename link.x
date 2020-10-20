@@ -22,9 +22,10 @@ SECTIONS
     KEEP(*(.vector_table.reset_vector));
   } > FLASH
 
-  .text :
+  .text : ALIGN(4)
   {
-    *(.text .text.*);
+    *(.text) 
+    *(.text.*)
   } > FLASH
 
   .rodata :
