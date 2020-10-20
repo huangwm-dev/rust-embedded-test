@@ -3,13 +3,13 @@
 
 use core::{
     panic::PanicInfo,
-    ptr
+    ptr::{read, write_volatile},
+    mem::zeroed
 };
 
-static RODATA: &[u8] = b"Hello, world!";
-static mut BSS: u8 = 0;
+static RODATA: &[u8] = b"Hello, World";
 static mut DATA: u16 = 1;
-
+static mut BSS: u8 = 0;
 
 #[panic_handler]
 fn panic(_panic: &PanicInfo<'_>) -> !
@@ -25,18 +25,34 @@ pub static __RESET_VECTOR: unsafe extern "C" fn() -> ! = reset_handler;
 pub unsafe extern "C" fn reset_handler() -> !
 {
     extern "C" {
-        static mut _sbss: u8; // Start of .bss section
-        static mut _ebss: u8; // End of .bss section
-        static mut _sdata: u8; // Start of .data section
-        static mut _edata: u8; // End of .data section
-        static _sidata: u8; // Start of .rodata section
+        static mut _sdata: u32; // Start of .data section
+        static mut _edata: u32; // End of .data section
+        static mut _sidata: u32; // Start of .rodata section
+
+        static mut _sbss: u32;  // start of .bss
+        static mut _ebss: u32;  // end of .bss
     }
 
-    let count = &_ebss as *const u8 as usize - &_sbss as *const u8 as usize;
-    ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
+    // Initialize data section
+    let mut sdata: *mut u32 = &mut _sdata as *mut u32;
+    let edata: *mut u32 = &mut _edata as *mut u32;
+    let mut sidata: *mut u32 = &mut _sidata as *mut u32;
 
-    let count = &_edata as *const u8 as usize - &_sdata as *const u8 as usize;
-    ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, count);
+    while sdata < edata
+    {
+        write_volatile(sdata, read(sidata));
+        sdata = sdata.offset(1);
+        sidata = sidata.offset(1);
+    }
+
+    // Initialize BSS section
+    let mut sbss: *mut u32 = &mut _sbss as *mut u32;
+    let ebss: *mut u32 = &mut _ebss as *mut u32;
+    while sbss < ebss
+    {
+        write_volatile(sbss, zeroed());
+        sbss = sbss.offset(1);
+    }
 
     extern "Rust" {
         fn main() -> !;
@@ -47,11 +63,11 @@ pub unsafe extern "C" fn reset_handler() -> !
 
 #[no_mangle]
 pub fn main() -> ! {
+
+    let mut _i = 0;
     let _x = RODATA;
     let _y = unsafe { &BSS };
     let _z = unsafe { &DATA };
-
-    let mut _i = 0;
     loop {
         _i += 1;
     }

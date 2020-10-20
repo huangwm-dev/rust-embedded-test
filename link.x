@@ -28,26 +28,32 @@ SECTIONS
     *(.text.*)
   } > FLASH
 
-  .rodata :
+  .rodata : ALIGN(4)
   {
-    *(.rodata .rodata.*);
+    *(.rodata)
+    *(.rodata*)
   } > FLASH
 
-  .bss :
+  .data : ALIGN(4)
   {
-    _sbss = .;
-    *(.bss .bss.*);
-    _ebss = .;
-  } > RAM
-
-  .data : AT(ADDR(.rodata) + SIZEOF(.rodata))
-  {
+    . = ALIGN(4);
     _sdata = .;
-    *(.data .data.*);
+    *(.data) 
+    *(.data.*)
+    . = ALIGN(4);
     _edata = .;
   } > RAM
-
   _sidata = LOADADDR(.data);
+
+  .bss : ALIGN(4)
+  {
+    . = ALIGN(4);
+    _sbss = .;
+    *(.bss)
+    *(.bss*)
+    . = ALIGN(4);
+    _ebss = .;
+  } > RAM
 
   /DISCARD/ :
   {
