@@ -22,29 +22,33 @@ SECTIONS
     KEEP(*(.vector_table.reset_vector));
   } > FLASH
 
-  .text :
+  .text : ALIGN(4)
   {
     *(.text .text.*);
   } > FLASH
 
-  .rodata :
-  {
+  .rodata : ALIGN(4)
+  { 
     *(.rodata .rodata.*);
   } > FLASH
 
-  .bss :
+  .bss : ALIGN(4)
   {
     _sbss = .;
     *(.bss .bss.*);
+    *(COMMON)
+    . = ALIGN(4);
     _ebss = .;
-  } > RAM
+  } > RAM AT > RAM
 
-  .data : AT(ADDR(.rodata) + SIZEOF(.rodata))
+  .data : ALIGN(4)
   {
+    . = ALIGN(4);
     _sdata = .;
     *(.data .data.*);
+    . = ALIGN(4);
     _edata = .;
-  } > RAM
+  } > RAM AT>FLASH
 
   _sidata = LOADADDR(.data);
 
